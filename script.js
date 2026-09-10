@@ -64,4 +64,33 @@
       stage.style.transform = "translate(0,0)";
     });
   }
+
+  /* ---- Analytics scaffold (pronto para integração futura) ----
+     Encaminha eventos para GA4 (gtag), Meta Pixel (fbq) e dataLayer, se existirem.
+     Sem nenhuma ferramenta instalada, é um no-op silencioso. */
+  function track(evento, dados) {
+    dados = dados || {};
+    try { (window.dataLayer = window.dataLayer || []).push(Object.assign({ event: evento }, dados)); } catch (e) {}
+    try { if (typeof window.gtag === "function") window.gtag("event", evento, dados); } catch (e) {}
+    try { if (typeof window.fbq === "function") window.fbq("trackCustom", evento, dados); } catch (e) {}
+  }
+
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("a");
+    if (!a) return;
+    var href = a.getAttribute("href") || "";
+    var cta = a.getAttribute("data-cta") || "";
+    if (href.indexOf("wa.me") > -1 || href.indexOf("api.whatsapp") > -1) track("whatsapp_click", { origem: cta || "link" });
+    else if (href.indexOf("instagram.com") > -1) track("instagram_click", {});
+    else if (cta) track("cta_click", { origem: cta });
+    else if (a.closest(".case")) track("projeto_click", {});
+  });
+
+  var fim = document.querySelector(".cta-fim");
+  if (fim && "IntersectionObserver" in window) {
+    var ioFim = new IntersectionObserver(function (es) {
+      es.forEach(function (x) { if (x.isIntersecting) { track("secao_final_visivel", {}); ioFim.disconnect(); } });
+    }, { threshold: 0.5 });
+    ioFim.observe(fim);
+  }
 })();
